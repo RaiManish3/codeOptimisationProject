@@ -1,0 +1,9 @@
+##FuncCall
+name: strcpy
+pattern: 
+strcpy(param0, param1);
+end:
+name: malloc
+pattern: 
+malloc(sizeof(identifier0)*param0);
+end:
