@@ -14,16 +14,21 @@ import itertools
 # your site-packages/ with setup.py
 sys.path.extend(['.', '..'])
 
-from pycparser import c_parser, c_ast, parse_file
+from pycparser import c_parser, c_ast, parse_file, c_generator
 
-#globals
+##globals
 #dictionary mapping class types to line range in initialPattern file
-classMap = {'FuncCall':(2,9)}
+classMap = {'FuncCall':(2,4), 'Decl':(6,8)}
 file_initialPattern = "initialPattern.txt"
 file_dataStore = "data.txt"
 line_offset = []
+
+#information store
 ParamStore = []
 IdentifierStore = []
+
+#variables
+param = 'param'
 
 #####################################################################################################
 def build_pattern_AST(pattern_string):
@@ -32,6 +37,35 @@ def build_pattern_AST(pattern_string):
     return ast
 
 #####################################################################################################
+
+#----------------------------------------------------------
+def getLineRange(node):
+    type_name = type(node).__name__
+    start_line = line_offset[classMap[type_name][0]-1]
+    end_line = line_offset[classMap[type_name][1]-1]
+    return type_name, start_line, end_line
+
+def paramID_func(x, y):
+    if type(x).__name__ == 'ID' and x.name.startswith(param):
+        param_store_func(x,y)
+        return True
+    return False
+
+def param_store_func(pattern_node, file_node):
+    n = int(pattern_node.name[5:].strip())
+    if len(ParamStore) == n:
+        #store the function as a parameter
+        generator = c_generator.CGenerator()
+        try:
+            ParamStore.append(generator.visit(file_node))
+        except:
+            ParamStore.append(file_node)
+
+def identifier_store_func(pattern_node, file_node):
+    if len(IdentifierStore)<= int(pattern_node.name[10:].strip()):
+        IdentifierStore.append(file_node.type.type.names)
+#----------------------------------------------------------
+
 def ArrayDecl_nodeCheck(pattern_node, file_node):
     return True
 
@@ -41,19 +75,30 @@ def ArrayRef_nodeCheck(pattern_node, file_node):
 def Assignment_nodeCheck(pattern_node, file_node):
     return True
 
+# for binaryOp ::
+# the operation has to be clearly defined the same as in the pattern
+# the left and right if set to parameter are then set automatically
+# else we dig further
 def BinaryOp_nodeCheck(pattern_node, file_node):
     flag = False
     if pattern_node.op == file_node.op:
+
         x = pattern_node.left
         y = file_node.left
         if type(x).__name__ == type(y).__name__:
-            what_type = type(x).__name__
+            what_type = type(y).__name__
             flag = eval(what_type+"_nodeCheck(x, y)")
+        else:
+            flag = paramID_func(x, y)
+
         x = pattern_node.right
         y = file_node.right
-        if type(x).__name__ == type(y).__name__:
-            what_type = type(x).__name__
+        if flag and type(x).__name__ == type(y).__name__:
+            what_type = type(y).__name__
             flag = eval(what_type+"_nodeCheck(x, y)")
+        else:
+            flag = paramID_func(x, y)
+
     return flag
 
 def Break_nodeCheck(pattern_node, file_node):
@@ -75,6 +120,9 @@ def Continue_nodeCheck(pattern_node, file_node):
     return True
 
 def Decl_nodeCheck(pattern_node, file_node):
+    param_store_func(pattern_node, file_node.name)
+    # the attribute storage and quals, I dont have much idea what they are doing right now
+    print(pattern_node.storage, file_node.quals)
     return True
 
 def DeclList_nodeCheck(pattern_node, file_node):
@@ -106,11 +154,11 @@ def ExprList_nodeCheck(pattern_node, file_node):
     try:
         tmp = zip(pattern_node.children(),file_node.children())
         for (xname, x), (yname, y) in tmp:
-            if (type(x).__name__ == type(y).__name__ or x.name.startswith('param')) and flag:
+            if type(x).__name__ == type(y).__name__ and flag:
                 what_type = type(y).__name__
                 flag = eval(what_type+"_nodeCheck(x, y)")
             else:
-                return False
+                flag = paramID_func(x, y)
     except:
         return False
     return True
@@ -119,14 +167,8 @@ def For_nodeCheck(pattern_node, file_node):
     return True
 
 def FuncCall_nodeCheck(pattern_node, file_node):
-    if type(pattern_node).__name__== 'ID' and pattern_node.name.startswith('param'):
-        n = int(pattern_node.name[5:].strip())
-        if len(ParamStore) <= n:
-            #store the function as a parameter
-            pass
-    else:
-        flag = ID_nodeCheck(pattern_node.children()[0][1], file_node.children()[0][1]) and ExprList_nodeCheck(pattern_node.children()[1][1], file_node.children()[1][1])
-    return flag
+    flag = ID_nodeCheck(pattern_node.children()[0][1], file_node.children()[0][1]) and ExprList_nodeCheck(pattern_node.children()[1][1], file_node.children()[1][1])
+    return flag or paramID_func(pattern_node, file_node)
 
 def FuncDecl_nodeCheck(pattern_node, file_node):
     return True
@@ -135,17 +177,14 @@ def Goto_nodeCheck(pattern_node, file_node):
     return True
 
 def ID_nodeCheck(pattern_node, file_node):
-    if pattern_node.name == file_node.name or pattern_node.name.startswith('param'):
-        if pattern_node.name.startswith('param'):
-            n=int(pattern_node.name[5:].strip())
-            if len(ParamStore)<=n:
-                ParamStore.append(file_node.name.strip())
+    if pattern_node.name == file_node.name:
         return True
-    return False
+    else:
+        return paramID_func(pattern_node,file_node)
 
 def IdentifierType_nodeCheck(pattern_node, file_node):
-    if len(IdentifierStore)<= int(pattern_node.name[10:].strip()):
-        IdentifierStore.append(file_node.type.type.names)
+    identifier_store_func(pattern_node, file_node)
+    return True
 
 def If_nodeCheck(pattern_node, file_node):
     return True
@@ -158,9 +197,7 @@ def UnaryOp_nodeCheck(pattern_node, file_node):
     if pattern_node.op == file_node.op:
         x = pattern_node.expr
         y = file_node.expr
-        if type(x).__name__ == 'ID' and type(y).__name__== 'Typename':
-            if x.name.startswith('identifier'):
-                IdentifierType_nodeCheck(x,y)
+        flag=IdentifierType_nodeCheck(x,y)
     return flag
 
 
@@ -185,9 +222,8 @@ def TypeDecl_nodeCheck(pattern_node, file_node):
 
 #####################################################################################################
 ## class iterators which find the required class range in initialPattern file
-def FuncCall_iterator(node):
-    start_line = line_offset[classMap['FuncCall'][0]-1]
-    end_line = line_offset[classMap['FuncCall'][1]-1]
+def pattern_iterator(node):
+    what_type, start_line, end_line = getLineRange(node)
     f=open(file_initialPattern,'r')
     f.seek(start_line)
     offset=0
@@ -196,37 +232,34 @@ def FuncCall_iterator(node):
     while offset <= end_line - start_line and line:
         line = f.readline()
         offset+=len(line)
-        #extract the name attribute
         try:
-            if 'name' in line.split(',')[0].strip():
-                node_name = line.split()[-1].strip()
-                line = f.readline()
-                offset+=len(line)
-                if node_name == node.name.name:
+            #extract the pattern
+            if 'start:' in line.strip():
+                pattern_string='int f(){\n'
+                while True:
                     line = f.readline()
-                    offset+=len(line)
-                    pattern_string='int f(){\n'
-                    while 'end:' not in line:
+                    if 'end:' in line:
+                        break
+                    else:
                         pattern_string+=line
-                        line = f.readline()
-                        offset+=len(line)
-                    pattern_string+='}'
-                    pattern_ast = build_pattern_AST(pattern_string)
-                    #travel down to the compound element
-                    pattern_ast = pattern_ast.ext[0].children()[1][1].children()
-                    flag = FuncCall_nodeCheck(pattern_ast[0][1], node)
-                    if flag:
-                        changeMade = True
-                        print(ParamStore)
-                        print(IdentifierStore)
-                        print(node.coord.line, node.coord.column)
-                        """
-                        fd = open(file_dataStore,'a')
-                        fd.write(str(ParamStore)+'\n')
-                        fd.close()
-                        """
-                        ParamStore[:]=[]
-                        IdentifierStore[:]=[]
+                    offset+=len(line)
+                pattern_string+='}'
+                pattern_ast = build_pattern_AST(pattern_string)
+                #travel down to the compound element
+                pattern_ast = pattern_ast.ext[0].children()[1][1].children()
+                flag = eval(what_type+"_nodeCheck(pattern_ast[0][1], node)")
+                if flag:
+                    changeMade = True
+                    #print(ParamStore)
+                    #print(IdentifierStore)
+                    #print(node.coord.line, node.coord.column)
+                    """
+                    fd = open(file_dataStore,'a')
+                    fd.write(str(ParamStore)+'\n')
+                    fd.close()
+                    """
+                ParamStore[:]=[]
+                IdentifierStore[:]=[]
         except:
             pass
 
@@ -240,7 +273,7 @@ def dfs_node_iterate(node):
         changeMade = False
         if what_type in classMap:
             #invoke the respective type check function
-            changeMade = eval(what_type+"_iterator(eval('x'))")
+            changeMade = pattern_iterator(x)
         #Do not iterate again on parts whose children had the changes
         if not changeMade:
             dfs_node_iterate(x)

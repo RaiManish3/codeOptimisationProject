@@ -11,5 +11,5 @@ int main(){
             a++;
     }
     strcpy(malloc(sizeof(int)*n),y);
-    int a = (int*)malloc(sizeof(int)*n);
+    int* a = (int*)malloc(sizeof(int)*n);
 }

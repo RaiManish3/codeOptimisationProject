@@ -1,9 +1,8 @@
 ##FuncCall
-name: strcpy
-pattern: 
+start: 
 strcpy(param0, param1);
 end:
-name: malloc
-pattern: 
-malloc(sizeof(identifier0)*param0);
+##Decl
+start:
+int* param0 = (int*)malloc(sizeof(int)*param1);
 end:
