@@ -26,6 +26,7 @@ line_offset = []
 #information store
 ParamStore = []
 IdentifierStore = []
+OpStore = []
 
 #variables
 param = 'param'
@@ -64,6 +65,9 @@ def param_store_func(pattern_node, file_node):
 def identifier_store_func(pattern_node, file_node):
     for name in file_node.names:
         IdentifierStore.append(name)
+
+def OP_store_func(pattern_node, file_node):
+    OpStore.append(file_node)
 #----------------------------------------------------------
 
 def ArrayDecl_nodeCheck(pattern_node, file_node):
@@ -73,7 +77,26 @@ def ArrayRef_nodeCheck(pattern_node, file_node):
     return True
 
 def Assignment_nodeCheck(pattern_node, file_node):
-    return True
+    flag = False
+    x, y = pattern_node, file_node
+    ## some thoughts to be given here
+    OP_store_func(x.op, y.op)
+
+    x, y = pattern_node.lvalue, file_node.lvalue
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x == type_y:
+        flag = eval(type_y+"_nodeCheck(x, y)")
+    else:
+        flag = paramID_func(x,y)
+
+    x, y = pattern_node.rvalue, file_node.rvalue
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x == type_y:
+        flag = eval(type_y+"_nodeCheck(x, y)")
+    else:
+        flag = paramID_func(x,y)
+
+    return flag
 
 # for binaryOp ::
 # the operation has to be clearly defined the same as in the pattern
@@ -224,18 +247,6 @@ def If_nodeCheck(pattern_node, file_node):
 def InitList_nodeCheck(pattern_node, file_node):
     return True
 
-def UnaryOp_nodeCheck(pattern_node, file_node):
-    flag = False
-    if pattern_node.op == file_node.op:
-        x = pattern_node.expr
-        y = file_node.expr
-        type_x, type_y = type(x).__name__, type(y).__name__
-        if type_x == type_y:
-            flag = eval(type_y+'_nodeCheck(x,y)')
-        else:
-            flag = paramID_func(x, y)
-    return flag
-
 def PtrDecl_nodeCheck(pattern_node, file_node):
     ## again no code for quals
     flag = False
@@ -268,6 +279,17 @@ def TypeDecl_nodeCheck(pattern_node, file_node):
 
     return flag
 
+def UnaryOp_nodeCheck(pattern_node, file_node):
+    flag = False
+    if pattern_node.op == file_node.op:
+        x = pattern_node.expr
+        y = file_node.expr
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x, y)
+    return flag
 
 #####################################################################################################
 ## class iterators which find the required class range in initialPattern file
@@ -299,8 +321,9 @@ def pattern_iterator(node):
                 flag = eval(what_type+"_nodeCheck(pattern_ast[0][1], node)")
                 if flag:
                     changeMade = True
-                    print(ParamStore)
-                    print(IdentifierStore)
+                    print('param: ',ParamStore)
+                    print('iden: ',IdentifierStore)
+                    print('assign: ',OpStore)
                     #print(node.coord.line, node.coord.column)
                     """
                     fd = open(file_dataStore,'a')
