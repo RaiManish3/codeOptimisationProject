@@ -18,7 +18,7 @@ from pycparser import c_parser, c_ast, parse_file, c_generator
 
 ##globals
 #dictionary mapping class types to line range in initialPattern file
-classMap = {'FuncCall':(2,4), 'Decl':(6,8)}
+classMap = {'Assignment':(2,4), 'Decl':(6,8),'FuncCall':(10,12)}
 file_initialPattern = "initialPattern.txt"
 file_dataStore = "data.txt"
 line_offset = []
@@ -46,7 +46,7 @@ def getLineRange(node):
     return type_name, start_line, end_line
 
 def paramID_func(x, y):
-    if type(x).__name__ == 'ID' and x.name.startswith(param):
+    if type(x).__name__ in ['ID','Decl'] and x.name.startswith(param):
         param_store_func(x,y)
         return True
     return False
@@ -62,8 +62,8 @@ def param_store_func(pattern_node, file_node):
             ParamStore.append(file_node)
 
 def identifier_store_func(pattern_node, file_node):
-    if len(IdentifierStore)<= int(pattern_node.name[10:].strip()):
-        IdentifierStore.append(file_node.type.type.names)
+    for name in file_node.names:
+        IdentifierStore.append(name)
 #----------------------------------------------------------
 
 def ArrayDecl_nodeCheck(pattern_node, file_node):
@@ -105,7 +105,23 @@ def Break_nodeCheck(pattern_node, file_node):
     return True
 
 def Cast_nodeCheck(pattern_node, file_node):
-    return True
+    flag = True
+    x=pattern_node.to_type
+    y=file_node.to_type
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x == type_y:
+        flag = eval(type_y+'_nodeCheck(x,y)')
+    else:
+        flag = False
+
+    x=pattern_node.expr
+    y=file_node.expr
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if flag and type_x == type_y:
+        flag = eval(type_y+'_nodeCheck(x,y)')
+    elif flag:
+        flag = paramID_func(x, y)
+    return flag
 
 def Compound_nodeCheck(pattern_node, file_node):
     return True
@@ -120,10 +136,26 @@ def Continue_nodeCheck(pattern_node, file_node):
     return True
 
 def Decl_nodeCheck(pattern_node, file_node):
-    param_store_func(pattern_node, file_node.name)
+    flag = True
+    # name attribute
+    paramID_func(pattern_node, file_node.name)
+    # type attribute
+    x,y = pattern_node.type, file_node.type
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x == type_y:
+        flag = eval(type_x+'_nodeCheck(x,y)')
+    elif type_y in ['PtrDecl', 'IdentifierType']:
+        identifier_store_func(x,y)
+
     # the attribute storage and quals, I dont have much idea what they are doing right now
-    print(pattern_node.storage, file_node.quals)
-    return True
+    # therefore to be added later maybe
+    x, y= pattern_node.init, file_node.init
+    if type(x).__name__ == type(y).__name__ and flag:
+        type_name = type(x).__name__
+        flag = eval(type_name+'_nodeCheck(x,y)')
+    else:
+        flag = False
+    return flag
 
 def DeclList_nodeCheck(pattern_node, file_node):
     return True
@@ -167,7 +199,7 @@ def For_nodeCheck(pattern_node, file_node):
     return True
 
 def FuncCall_nodeCheck(pattern_node, file_node):
-    flag = ID_nodeCheck(pattern_node.children()[0][1], file_node.children()[0][1]) and ExprList_nodeCheck(pattern_node.children()[1][1], file_node.children()[1][1])
+    flag = ID_nodeCheck(pattern_node.name, file_node.name) and ExprList_nodeCheck(pattern_node.args, file_node.args)
     return flag or paramID_func(pattern_node, file_node)
 
 def FuncDecl_nodeCheck(pattern_node, file_node):
@@ -197,9 +229,22 @@ def UnaryOp_nodeCheck(pattern_node, file_node):
     if pattern_node.op == file_node.op:
         x = pattern_node.expr
         y = file_node.expr
-        flag=IdentifierType_nodeCheck(x,y)
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x, y)
     return flag
 
+def PtrDecl_nodeCheck(pattern_node, file_node):
+    ## again no code for quals
+    flag = False
+    x = pattern_node.type
+    y = file_node.type
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x == type_y:
+        flag = eval(type_y+'_nodeCheck(x,y)')
+    return flag
 
 def Typename_nodeCheck(pattern_node, file_node):
     flag = False
@@ -210,6 +255,8 @@ def Typename_nodeCheck(pattern_node, file_node):
         what_type = type(x).__name__
         flag = eval(what_type+"_nodeCheck(x, y)")
 
+    return flag
+
 def TypeDecl_nodeCheck(pattern_node, file_node):
     flag = False
     # other parameters I currently not aware of so not implementing
@@ -218,6 +265,8 @@ def TypeDecl_nodeCheck(pattern_node, file_node):
     if type(x).__name__ == type(y).__name__:
         what_type = type(x).__name__
         flag = eval(what_type+"_nodeCheck(x, y)")
+
+    return flag
 
 
 #####################################################################################################
@@ -250,8 +299,8 @@ def pattern_iterator(node):
                 flag = eval(what_type+"_nodeCheck(pattern_ast[0][1], node)")
                 if flag:
                     changeMade = True
-                    #print(ParamStore)
-                    #print(IdentifierStore)
+                    print(ParamStore)
+                    print(IdentifierStore)
                     #print(node.coord.line, node.coord.column)
                     """
                     fd = open(file_dataStore,'a')

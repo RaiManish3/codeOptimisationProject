@@ -1,8 +1,12 @@
-##FuncCall
-start: 
-strcpy(param0, param1);
+##Assigment
+start:
+param0 = (int*)malloc(sizeof(int)*param1);
 end:
 ##Decl
 start:
-int* param0 = (int*)malloc(sizeof(int)*param1);
+int param0 = (int*)malloc(sizeof(int)*param1);
+end:
+##FuncCall
+start: 
+strcpy(param0, param1);
 end:
