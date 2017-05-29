@@ -247,6 +247,15 @@ def If_nodeCheck(pattern_node, file_node):
 def InitList_nodeCheck(pattern_node, file_node):
     return True
 
+def Label_nodeCheck(pattern_node, file_node):
+    return True
+
+def NameInitializer_nodeCheck(pattern_node, file_node):
+    return True
+
+def ParamList_nodeCheck(pattern_node, file_node):
+    return True
+
 def PtrDecl_nodeCheck(pattern_node, file_node):
     ## again no code for quals
     flag = False
@@ -257,7 +266,22 @@ def PtrDecl_nodeCheck(pattern_node, file_node):
         flag = eval(type_y+'_nodeCheck(x,y)')
     return flag
 
-def Typename_nodeCheck(pattern_node, file_node):
+def Return_nodeCheck(pattern_node, file_node):
+    return True
+
+def Struct_nodeCheck(pattern_node, file_node):
+    return True
+
+def StructRef_nodeCheck(pattern_node, file_node):
+    return True
+
+def Switch_nodeCheck(pattern_node, file_node):
+    return True
+
+def TernaryOp_nodeCheck(pattern_node, file_node):
+    return True
+
+def TypeDecl_nodeCheck(pattern_node, file_node):
     flag = False
     # other parameters I currently not aware of so not implementing
     x = pattern_node.type
@@ -268,7 +292,10 @@ def Typename_nodeCheck(pattern_node, file_node):
 
     return flag
 
-def TypeDecl_nodeCheck(pattern_node, file_node):
+def Typedef_nodeCheck(pattern_node, file_node):
+    return True
+
+def Typename_nodeCheck(pattern_node, file_node):
     flag = False
     # other parameters I currently not aware of so not implementing
     x = pattern_node.type
@@ -290,6 +317,15 @@ def UnaryOp_nodeCheck(pattern_node, file_node):
         else:
             flag = paramID_func(x, y)
     return flag
+
+def Union_nodeCheck(pattern_node, file_node):
+    return True
+
+def While_nodeCheck(pattern_node, file_node):
+    return True
+
+def Pragma_nodeCheck(pattern_node, file_node):
+    return True
 
 #####################################################################################################
 ## class iterators which find the required class range in initialPattern file
