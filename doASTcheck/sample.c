@@ -1,5 +1,5 @@
 int main(){
-    int a =1;
+    char a[2][3];
     if(2>3){
         while(a<4)
             while(a<2)

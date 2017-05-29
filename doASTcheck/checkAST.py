@@ -18,7 +18,7 @@ from pycparser import c_parser, c_ast, parse_file, c_generator
 
 ##globals
 #dictionary mapping class types to line range in initialPattern file
-classMap = {'Assignment':(2,4), 'Decl':(6,8),'FuncCall':(10,12)}
+classMap = {'Assignment':(2,4), 'Decl':(6,11),'FuncCall':(13,15)}
 file_initialPattern = "initialPattern.txt"
 file_dataStore = "data.txt"
 line_offset = []
@@ -40,6 +40,8 @@ def build_pattern_AST(pattern_string):
 #####################################################################################################
 
 #----------------------------------------------------------
+## helper functions
+
 def getLineRange(node):
     type_name = type(node).__name__
     start_line = line_offset[classMap[type_name][0]-1]
@@ -68,10 +70,30 @@ def identifier_store_func(pattern_node, file_node):
 
 def OP_store_func(pattern_node, file_node):
     OpStore.append(file_node)
+
+def dimArray_func(file_node):
+    if isinstance(ParamStore[-1],list):
+        ParamStore[-1].insert(0,file_node.value)
+    else:
+        ParamStore.append([file_node.value])
+
 #----------------------------------------------------------
 
 def ArrayDecl_nodeCheck(pattern_node, file_node):
-    return True
+    flag=False
+    x, y = pattern_node.type, file_node.type
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x == type_y:
+        flag = eval(type_y+"_nodeCheck(x, y)")
+    elif type_y=='ArrayDecl':
+        ## case of multidimensional array
+        flag = eval(type_y+"_nodeCheck(pattern_node, y)")
+
+    x, y = pattern_node.dim, file_node.dim
+    type_x, type_y = type(x).__name__, type(y).__name__
+    ## dimensions are to be stored always
+    dimArray_func(y)
+    return flag
 
 def ArrayRef_nodeCheck(pattern_node, file_node):
     return True
@@ -153,6 +175,7 @@ def CompoundLiteral_nodeCheck(pattern_node, file_node):
     return True
 
 def Constant_nodeCheck(pattern_node, file_node):
+    paramID_func(pattern_node, file_node)
     return True
 
 def Continue_nodeCheck(pattern_node, file_node):
@@ -169,15 +192,20 @@ def Decl_nodeCheck(pattern_node, file_node):
         flag = eval(type_x+'_nodeCheck(x,y)')
     elif type_y in ['PtrDecl', 'IdentifierType']:
         identifier_store_func(x,y)
+    else:
+        flag=False
 
     # the attribute storage and quals, I dont have much idea what they are doing right now
     # therefore to be added later maybe
-    x, y= pattern_node.init, file_node.init
-    if type(x).__name__ == type(y).__name__ and flag:
-        type_name = type(x).__name__
-        flag = eval(type_name+'_nodeCheck(x,y)')
+    if type_y!='ArrayDecl' and flag:
+        x, y= pattern_node.init, file_node.init
+        if type(x).__name__ == type(y).__name__:
+            type_name = type(x).__name__
+            flag = eval(type_name+'_nodeCheck(x,y)')
+        else:
+            flag = False
     else:
-        flag = False
+        pass
     return flag
 
 def DeclList_nodeCheck(pattern_node, file_node):
@@ -289,7 +317,6 @@ def TypeDecl_nodeCheck(pattern_node, file_node):
     if type(x).__name__ == type(y).__name__:
         what_type = type(x).__name__
         flag = eval(what_type+"_nodeCheck(x, y)")
-
     return flag
 
 def Typedef_nodeCheck(pattern_node, file_node):
@@ -366,8 +393,8 @@ def pattern_iterator(node):
                     fd.write(str(ParamStore)+'\n')
                     fd.close()
                     """
-                ParamStore[:]=[]
-                IdentifierStore[:]=[]
+            ParamStore[:]=[]
+            IdentifierStore[:]=[]
         except:
             pass
 
@@ -378,6 +405,7 @@ def pattern_iterator(node):
 def dfs_node_iterate(node):
     for xname, x in node.children():
         what_type = type(x).__name__
+        #print(what_type)
         changeMade = False
         if what_type in classMap:
             #invoke the respective type check function
