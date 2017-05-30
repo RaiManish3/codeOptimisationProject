@@ -77,6 +77,12 @@ def dimArray_func(file_node):
     else:
         ParamStore.append([file_node.value])
 
+def ptr_store(file_node,times):
+    if IdentifierStore==[] or not isinstance(IdentifierStore[-1], int):
+        IdentifierStore.append(times)
+    else:
+        IdentifierStore[-1]=times
+
 #----------------------------------------------------------
 
 def ArrayDecl_nodeCheck(pattern_node, file_node):
@@ -184,28 +190,31 @@ def Continue_nodeCheck(pattern_node, file_node):
 def Decl_nodeCheck(pattern_node, file_node):
     flag = True
     # name attribute
-    paramID_func(pattern_node, file_node.name)
+    flag = paramID_func(pattern_node, file_node.name)
     # type attribute
     x,y = pattern_node.type, file_node.type
     type_x, type_y = type(x).__name__, type(y).__name__
     if type_x == type_y:
-        flag = eval(type_x+'_nodeCheck(x,y)')
+        flag = eval(type_y+'_nodeCheck(x,y)')
     elif type_y in ['PtrDecl', 'IdentifierType']:
-        identifier_store_func(x,y)
+        flag = eval(type_y+'_nodeCheck(x,y)')
     else:
         flag=False
 
     # the attribute storage and quals, I dont have much idea what they are doing right now
     # therefore to be added later maybe
-    if type_y!='ArrayDecl' and flag:
-        x, y= pattern_node.init, file_node.init
-        if type(x).__name__ == type(y).__name__:
-            type_name = type(x).__name__
-            flag = eval(type_name+'_nodeCheck(x,y)')
+    x, y= pattern_node.init, file_node.init
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x==type_y and flag:
+        if type_x!='NoneType':
+            flag = eval(type_y+'_nodeCheck(x,y)')
         else:
-            flag = False
+            ## store the parameter when the init is None
+            flag = paramID_func(pattern_node, file_node.name)
+    elif type_x=='ID' and type_y=='Constant':
+        flag = eval(type_y+'_nodeCheck(x,y)')
     else:
-        pass
+        flag=False
     return flag
 
 def DeclList_nodeCheck(pattern_node, file_node):
@@ -284,14 +293,26 @@ def NameInitializer_nodeCheck(pattern_node, file_node):
 def ParamList_nodeCheck(pattern_node, file_node):
     return True
 
+times=0
 def PtrDecl_nodeCheck(pattern_node, file_node):
     ## again no code for quals
-    flag = False
-    x = pattern_node.type
+    global times
+    times+=1
+    flag = True
     y = file_node.type
-    type_x, type_y = type(x).__name__, type(y).__name__
-    if type_x == type_y:
+    type_y =type(y).__name__
+    if type(pattern_node).__name__=='PtrDecl':
+        x = pattern_node.type
+        type_x = type(x).__name__
         flag = eval(type_y+'_nodeCheck(x,y)')
+    else:
+        ptr_store(y,times)
+        flag = eval(type_y+'_nodeCheck(pattern_node,y)')
+    times-=1
+    ## case when ptr to ptr
+    #print(IdentifierStore)
+    #if times==0 and len(IdentifierStore)>1 and isinstance(IdentifierStore[-2],list):
+    #    del IdentifierStore[-1]
     return flag
 
 def Return_nodeCheck(pattern_node, file_node):
@@ -327,10 +348,9 @@ def Typename_nodeCheck(pattern_node, file_node):
     # other parameters I currently not aware of so not implementing
     x = pattern_node.type
     y = file_node.type
-    if type(x).__name__ == type(y).__name__:
-        what_type = type(x).__name__
-        flag = eval(what_type+"_nodeCheck(x, y)")
-
+    type_x, type_y = type(x).__name__, type(y).__name__
+    if type_x == type_y or type_y=='PtrDecl':
+        flag = eval(type_y+"_nodeCheck(x, y)")
     return flag
 
 def UnaryOp_nodeCheck(pattern_node, file_node):
@@ -378,6 +398,9 @@ def pattern_iterator(node):
                         pattern_string+=line
                     offset+=len(line)
                 pattern_string+='}'
+                #for debugging uncomment the following two lines
+                #print(node.coord)
+                #print(pattern_string)
                 pattern_ast = build_pattern_AST(pattern_string)
                 #travel down to the compound element
                 pattern_ast = pattern_ast.ext[0].children()[1][1].children()

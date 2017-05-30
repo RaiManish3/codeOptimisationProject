@@ -1,5 +1,5 @@
 int main(){
-    char a[2][3];
+    char*** a = (char***)malloc(sizeof(char**)*n);
     if(2>3){
         while(a<4)
             while(a<2)
