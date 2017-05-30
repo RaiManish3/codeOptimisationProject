@@ -18,7 +18,7 @@ from pycparser import c_parser, c_ast, parse_file, c_generator
 
 ##globals
 #dictionary mapping class types to line range in initialPattern file
-classMap = {'Assignment':(2,4), 'Decl':(6,11),'FuncCall':(13,15)}
+classMap = {'Assignment':(2,4), 'Decl':(6,11),'FuncCall':(13, 15)}
 file_initialPattern = "initialPattern.txt"
 file_dataStore = "data.txt"
 line_offset = []
@@ -91,14 +91,15 @@ def ArrayDecl_nodeCheck(pattern_node, file_node):
     type_x, type_y = type(x).__name__, type(y).__name__
     if type_x == type_y:
         flag = eval(type_y+"_nodeCheck(x, y)")
-    elif type_y=='ArrayDecl':
+    elif type_y in ['ArrayDecl', 'TypeDecl']:
         ## case of multidimensional array
         flag = eval(type_y+"_nodeCheck(pattern_node, y)")
 
-    x, y = pattern_node.dim, file_node.dim
-    type_x, type_y = type(x).__name__, type(y).__name__
+    y = file_node.dim
+    type_y = type(y).__name__
     ## dimensions are to be stored always
     dimArray_func(y)
+    #print(file_node.dim_quals)
     return flag
 
 def ArrayRef_nodeCheck(pattern_node, file_node):
@@ -191,12 +192,15 @@ def Decl_nodeCheck(pattern_node, file_node):
     flag = True
     # name attribute
     flag = paramID_func(pattern_node, file_node.name)
+    #quals attribute
+    for q in file_node.quals:
+        IdentifierStore.append(q)
     # type attribute
     x,y = pattern_node.type, file_node.type
     type_x, type_y = type(x).__name__, type(y).__name__
     if type_x == type_y:
         flag = eval(type_y+'_nodeCheck(x,y)')
-    elif type_y in ['PtrDecl', 'IdentifierType']:
+    elif type_y in ['PtrDecl', 'IdentifierType', 'ArrayDecl']:
         flag = eval(type_y+'_nodeCheck(x,y)')
     else:
         flag=False
@@ -215,6 +219,7 @@ def Decl_nodeCheck(pattern_node, file_node):
         flag = eval(type_y+'_nodeCheck(x,y)')
     else:
         flag=False
+
     return flag
 
 def DeclList_nodeCheck(pattern_node, file_node):
@@ -418,6 +423,7 @@ def pattern_iterator(node):
                     """
             ParamStore[:]=[]
             IdentifierStore[:]=[]
+            OpStore[:]=[]
         except:
             pass
 
@@ -428,8 +434,8 @@ def pattern_iterator(node):
 def dfs_node_iterate(node):
     for xname, x in node.children():
         what_type = type(x).__name__
-        #print(what_type)
         changeMade = False
+        #print(what_type)
         if what_type in classMap:
             #invoke the respective type check function
             changeMade = pattern_iterator(x)
