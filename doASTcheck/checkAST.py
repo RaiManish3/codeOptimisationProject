@@ -18,7 +18,7 @@ from pycparser import c_parser, c_ast, parse_file, c_generator
 
 ##globals
 #dictionary mapping class types to line range in initialPattern file
-classMap = {'Assignment':(2,4), 'Decl':(6,11),'FuncCall':(13, 15)}
+classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21)}
 file_initialPattern = "initialPattern.txt"
 file_dataStore = "data.txt"
 line_offset = []
@@ -71,11 +71,29 @@ def identifier_store_func(pattern_node, file_node):
 def OP_store_func(pattern_node, file_node):
     OpStore.append(file_node)
 
-def dimArray_func(file_node):
+def dimArray_func(file_node, frm):
     if isinstance(ParamStore[-1],list):
-        ParamStore[-1].insert(0,file_node.value)
+        ## if the caller is different, we get differnt dimensions
+        ## ordering and hence we need to be specific here.
+        if frm == 'decl':
+            if type(file_node).__name__ == 'Constant':
+                ParamStore[-1].insert(0,file_node.value)
+            else:
+                #assuming ID
+                ParamStore[-1].insert(0,file_node.name)
+
+        if frm == 'ref':
+            if type(file_node).__name__ == 'Constant':
+                ParamStore[-1].append(file_node.value)
+            else:
+                #assuming ID
+                ParamStore[-1].append(file_node.name)
     else:
-        ParamStore.append([file_node.value])
+        if type(file_node).__name__ == 'Constant':
+            ParamStore.append([file_node.value])
+        else:
+            #assuming ID
+            ParamStore.append([file_node.name])
 
 def ptr_store(file_node,times):
     if IdentifierStore==[] or not isinstance(IdentifierStore[-1], int):
@@ -98,12 +116,22 @@ def ArrayDecl_nodeCheck(pattern_node, file_node):
     y = file_node.dim
     type_y = type(y).__name__
     ## dimensions are to be stored always
-    dimArray_func(y)
+    dimArray_func(y, 'decl')
     #print(file_node.dim_quals)
     return flag
 
 def ArrayRef_nodeCheck(pattern_node, file_node):
-    return True
+    flag = False
+    ## a name id guaranteed to have
+    type_y = type(file_node.name).__name__
+    type_x = type(pattern_node.name).__name__
+    if type_x == type_y:
+        flag = eval(type_y+"_nodeCheck(pattern_node.name, file_node.name)")
+    else:
+        flag = eval(type_y+"_nodeCheck(pattern_node, file_node.name)")
+
+    dimArray_func(file_node.subscript, 'ref')
+    return flag
 
 def Assignment_nodeCheck(pattern_node, file_node):
     flag = False
@@ -115,15 +143,20 @@ def Assignment_nodeCheck(pattern_node, file_node):
     type_x, type_y = type(x).__name__, type(y).__name__
     if type_x == type_y:
         flag = eval(type_y+"_nodeCheck(x, y)")
+    elif type_x in ['ArrayRef'] or type_y in ['ArrayRef']:
+        flag = False
     else:
         flag = paramID_func(x,y)
 
     x, y = pattern_node.rvalue, file_node.rvalue
     type_x, type_y = type(x).__name__, type(y).__name__
-    if type_x == type_y:
-        flag = eval(type_y+"_nodeCheck(x, y)")
-    else:
-        flag = paramID_func(x,y)
+    if flag:
+        if type_x == type_y:
+            flag = eval(type_y+"_nodeCheck(x, y)")
+        elif type_x in ['ArrayRef'] or type_y in ['ArrayRef']:
+            flag = False
+        else:
+            flag = paramID_func(x,y)
 
     return flag
 

@@ -2,12 +2,18 @@
 start:
 param0 = (int*)malloc(sizeof(int)*param1);
 end:
+start:
+param0[param1] = param2;
+end:
+start:
+param0 = param1[param2];
+end:
 ##Decl and ##ArrayDecl
 start:
 int* param0 = (int*)malloc(sizeof(int)*param1);
 end:
 start:
-char param0;
+int param0[param1];
 end:
 ##FuncCall
 start: 
