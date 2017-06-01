@@ -18,7 +18,7 @@ from pycparser import c_parser, c_ast, parse_file, c_generator
 
 ##globals
 #dictionary mapping class types to line range in initialPattern file
-classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21)}
+classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21),'If':(23,25)}
 file_initialPattern = "initialPattern.txt"
 file_dataStore = "data.txt"
 line_offset = []
@@ -43,6 +43,8 @@ def build_pattern_AST(pattern_string):
 ## helper functions
 
 def getLineRange(node):
+    ## gives the start and end line for the required class
+    ## in initialPattern file
     type_name = type(node).__name__
     start_line = line_offset[classMap[type_name][0]-1]
     end_line = line_offset[classMap[type_name][1]-1]
@@ -187,6 +189,11 @@ def BinaryOp_nodeCheck(pattern_node, file_node):
     return flag
 
 def Break_nodeCheck(pattern_node, file_node):
+    #not a threat
+    return True
+
+def Case_nodeCheck(pattern_node, file_node):
+    #to be decided
     return True
 
 def Cast_nodeCheck(pattern_node, file_node):
@@ -209,16 +216,32 @@ def Cast_nodeCheck(pattern_node, file_node):
     return flag
 
 def Compound_nodeCheck(pattern_node, file_node):
-    return True
+    ## what to do with compound element
+    ## decide in a discussion
+    flag = False
+    if type(pattern_node).__name__ == 'Compound':
+        x,y= pattern_node.block_items,file_node.block_items
+        if len(x)> len(y):
+            return False
+        tmp = zip(x,y)
+        for x, y in tmp:
+            flag = eval(type(y).__name__+'_nodeCheck(x,y)')
+            if not flag:
+                break
+    else:
+        flag = paramID_func(pattern_node, file_node)
+    return flag
 
 def CompoundLiteral_nodeCheck(pattern_node, file_node):
     return True
 
 def Constant_nodeCheck(pattern_node, file_node):
-    paramID_func(pattern_node, file_node)
+    ## the type of the constant is also important
+    ParamStore.append([file_node.type, file_node.value])
     return True
 
 def Continue_nodeCheck(pattern_node, file_node):
+    #not a threat
     return True
 
 def Decl_nodeCheck(pattern_node, file_node):
@@ -256,13 +279,29 @@ def Decl_nodeCheck(pattern_node, file_node):
     return flag
 
 def DeclList_nodeCheck(pattern_node, file_node):
-    return True
+    flag=False
+    try:
+        x, y = pattern_node.decls, file_node.decls
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x==type_y and len(x)==len(y):
+            tmp = zip(x,y)
+            for xx, yy in tmp:
+                type_yy = type(yy).__name__
+                flag = eval(type_yy+'_nodeCheck(xx,yy)')
+                if not flag:
+                    break
+        else:
+            flag = paramID_func(x,y)
+    except:
+        flag = paramID_func(pattern_node, file_node)
+    return flag
 
 def Default_nodeCheck(pattern_node, file_node):
     return True
 
 def DoWhile_nodeCheck(pattern_node, file_node):
-    return True
+    ## similar to While so forwarding this case to that of While
+    return While_nodeCheck(pattern_node,file_node)
 
 def EllipsisParam_nodeCheck(pattern_node, file_node):
     return True
@@ -271,19 +310,25 @@ def EmptyStatement_nodeCheck(pattern_node, file_node):
     return True
 
 def Enum_nodeCheck(pattern_node, file_node):
+    ## precoded so it wont alter the execution of program
     return True
 
 def Enumerator_nodeCheck(pattern_node, file_node):
+    ## name: value pairs for enum
+    ## precoded so it wont alter the execution of program
     return True
 
 def EnumeratorList_nodeCheck(pattern_node, file_node):
+    ## list for enum
     return True
 
 def ExprList_nodeCheck(pattern_node, file_node):
     flag = True
     try:
-        tmp = zip(pattern_node.children(),file_node.children())
-        for (xname, x), (yname, y) in tmp:
+        if len(pattern_node.exprs)> len(file_node.exprs):
+            return False
+        tmp = zip(x,y)
+        for x, y in tmp:
             if type(x).__name__ == type(y).__name__ and flag:
                 what_type = type(y).__name__
                 flag = eval(what_type+"_nodeCheck(x, y)")
@@ -294,7 +339,47 @@ def ExprList_nodeCheck(pattern_node, file_node):
     return True
 
 def For_nodeCheck(pattern_node, file_node):
-    return True
+    ## the implementation :: when the parameters are when defined
+    ## the evaluation is strict checking for each construct
+    flag = False
+    ##init attribute : in most cases we would like to store it
+    try:
+        x,y = pattern_node.init,file_node.init
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x,y)
+
+        if not flag: return False
+        ##cond attribute : in most cases we would like to store it
+        x,y = pattern_node.cond,file_node.cond
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x,y)
+
+        if not flag: return False
+        ##next attribute : in most cases we would like to store it
+        x,y = pattern_node.next,file_node.next
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x,y)
+
+        if not flag: return False
+        ##stmt attribute : in most cases we would like to store it
+        x,y = pattern_node.stmt,file_node.stmt
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x,y)
+    except:
+        flag = False
+    return flag
 
 def FuncCall_nodeCheck(pattern_node, file_node):
     flag = ID_nodeCheck(pattern_node.name, file_node.name) and ExprList_nodeCheck(pattern_node.args, file_node.args)
@@ -317,7 +402,35 @@ def IdentifierType_nodeCheck(pattern_node, file_node):
     return True
 
 def If_nodeCheck(pattern_node, file_node):
-    return True
+    flag = False
+    ##init attribute : in most cases we would like to store it
+    try:
+        x,y = pattern_node.cond,file_node.cond
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x,y)
+
+        if not flag: return flag
+        x,y = pattern_node.iftrue,file_node.iftrue
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x,y)
+
+        if not flag: return flag
+        x,y = pattern_node.iffalse,file_node.iffalse
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            if type_y!='NoneType':
+                flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x,y)
+    except:
+        flag = False
+    return flag
 
 def InitList_nodeCheck(pattern_node, file_node):
     return True
@@ -347,10 +460,6 @@ def PtrDecl_nodeCheck(pattern_node, file_node):
         ptr_store(y,times)
         flag = eval(type_y+'_nodeCheck(pattern_node,y)')
     times-=1
-    ## case when ptr to ptr
-    #print(IdentifierStore)
-    #if times==0 and len(IdentifierStore)>1 and isinstance(IdentifierStore[-2],list):
-    #    del IdentifierStore[-1]
     return flag
 
 def Return_nodeCheck(pattern_node, file_node):
@@ -371,21 +480,20 @@ def TernaryOp_nodeCheck(pattern_node, file_node):
 def TypeDecl_nodeCheck(pattern_node, file_node):
     flag = False
     # other parameters I currently not aware of so not implementing
-    x = pattern_node.type
-    y = file_node.type
+    x,y = pattern_node.type,file_node.type
     if type(x).__name__ == type(y).__name__:
         what_type = type(x).__name__
         flag = eval(what_type+"_nodeCheck(x, y)")
     return flag
 
 def Typedef_nodeCheck(pattern_node, file_node):
+    ## not a threat
     return True
 
 def Typename_nodeCheck(pattern_node, file_node):
     flag = False
     # other parameters I currently not aware of so not implementing
-    x = pattern_node.type
-    y = file_node.type
+    x,y = pattern_node.type,file_node.type
     type_x, type_y = type(x).__name__, type(y).__name__
     if type_x == type_y or type_y=='PtrDecl':
         flag = eval(type_y+"_nodeCheck(x, y)")
@@ -393,23 +501,46 @@ def Typename_nodeCheck(pattern_node, file_node):
 
 def UnaryOp_nodeCheck(pattern_node, file_node):
     flag = False
-    if pattern_node.op == file_node.op:
-        x = pattern_node.expr
-        y = file_node.expr
-        type_x, type_y = type(x).__name__, type(y).__name__
-        if type_x == type_y:
-            flag = eval(type_y+'_nodeCheck(x,y)')
-        else:
-            flag = paramID_func(x, y)
+    try:
+        if pattern_node.op == file_node.op:
+            x,y = pattern_node.expr,file_node.expr
+            type_x, type_y = type(x).__name__, type(y).__name__
+            if type_x == type_y:
+                flag = eval(type_y+'_nodeCheck(x,y)')
+            else:
+                flag = paramID_func(x, y)
+    except:
+        flag = paramID_func(pattern_node, file_node)
     return flag
 
 def Union_nodeCheck(pattern_node, file_node):
     return True
 
 def While_nodeCheck(pattern_node, file_node):
-    return True
+    flag = False
+    try:
+        ## the cond must be either equal or x must have param set to its name
+        y,x = file_node.cond, pattern_node.cond
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x, y)
+
+        ## the stmts that follow must be either equal or x must have param set to its name
+        y,x = file_node.stmt, pattern_node.stmt
+        type_x, type_y = type(x).__name__, type(y).__name__
+        if type_x == type_y:
+            flag = eval(type_y+'_nodeCheck(x,y)')
+        else:
+            flag = paramID_func(x, y)
+    except:
+        # the case when pattern_node does not have the similar structure as file_node or lacks param fields
+        flag = False
+    return flag
 
 def Pragma_nodeCheck(pattern_node, file_node):
+    ## not a threat
     return True
 
 #####################################################################################################
@@ -468,7 +599,7 @@ def dfs_node_iterate(node):
     for xname, x in node.children():
         what_type = type(x).__name__
         changeMade = False
-        #print(what_type)
+        print(what_type)
         if what_type in classMap:
             #invoke the respective type check function
             changeMade = pattern_iterator(x)

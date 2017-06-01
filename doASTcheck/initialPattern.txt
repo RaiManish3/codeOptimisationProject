@@ -19,3 +19,7 @@ end:
 start: 
 strcpy(param0, param1);
 end:
+##If
+start:
+if(param0<param1) param2;
+end:
