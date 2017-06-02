@@ -9,6 +9,7 @@
 from __future__ import print_function
 import sys
 import itertools
+import re
 
 # This is not required if you've installed pycparser into
 # your site-packages/ with setup.py
@@ -16,9 +17,14 @@ sys.path.extend(['.', '..'])
 
 from pycparser import c_parser, c_ast, parse_file, c_generator
 
+##definitions
+INF = float("inf")
+ZERO = 0
+
 ##globals
 #dictionary mapping class types to line range in initialPattern file
 classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21),'If':(23,25)}
+c_file = ''
 file_initialPattern = "initialPattern.txt"
 file_dataStore = "data.txt"
 line_offset = []
@@ -42,6 +48,82 @@ def build_pattern_AST(pattern_string):
 #----------------------------------------------------------
 ## helper functions
 
+def generatorC(file_node):
+    generator = c_generator.CGenerator()
+    try:
+        return generator.visit(file_node)
+    except:
+        return file_node
+
+line1, col1, line2, col2 = INF, INF, ZERO, ZERO
+def updateCoord(node):
+    global line1, col1, line2, col2
+    try:
+        line = node.coord.line
+        if line ==0:
+            return
+        col = node.coord.column
+        if line<=line1:
+            if line<line1:
+                line1=line
+                if col is not None:
+                    col1 = col
+            if col is not None and col<col1:
+                col1=col
+        if line>=line2:
+            if line>line2:
+                line2=line
+                if col is not None:
+                    col2 = col
+            if col is not None and col>col2:
+                col2=col
+    except:
+        pass
+
+"""
+## try using regex
+reg_spl = ['.','?','\\','(',')','!','$','^','*','+','{','}','[',']','#','=','<','>']
+def getCoord(file_node, start_line=1):
+    file_string = generatorC(file_node)
+    ## iterate
+    fx = open(c_file, 'r')
+    strx = ' '
+    flag = True
+    print(file_string)
+    for i in file_string:
+        if i==' ':
+            if flag:
+                if not (len(strx)>=3 and strx[-3:]=='\s*'):
+                    strx+='\s*'
+                flag = False
+        elif i in reg_spl:
+            strx+='\\'+i+'\s*'
+            flag = True
+        else:
+            strx+=i
+            flag = True
+        print(strx , i)
+#---------------------------------
+    try:
+        fx = open(c_file, 'r')
+        all_lines = ''.join(fx.readlines())
+        file_string = re.sub(r'\\\s+','\\s*',file_string)
+        print(all_lines)
+        if file_string[-3:] =='\s*':
+            file_string = file_string[:-3]
+
+        print(file_string)
+        matching = re.search(file_string, all_lines)
+        print(matching)
+        #matching = re.search(file_string, all_lines).group(0)
+        #print(matching)
+        #print(len(matching.splitlines()[-1]))
+        #fx.close()
+    except:
+        print("error")
+
+"""
+
 def getLineRange(node):
     ## gives the start and end line for the required class
     ## in initialPattern file
@@ -60,11 +142,12 @@ def param_store_func(pattern_node, file_node):
     n = int(pattern_node.name[5:].strip())
     if len(ParamStore) == n:
         #store the function as a parameter
-        generator = c_generator.CGenerator()
-        try:
-            ParamStore.append(generator.visit(file_node))
-        except:
-            ParamStore.append(file_node)
+        #generator = c_generator.CGenerator()
+        #try:
+        #    ParamStore.append(generator.visit(file_node))
+        #except:
+        #    ParamStore.append(file_node)
+        ParamStore.append(generatorC(file_node))
 
 def identifier_store_func(pattern_node, file_node):
     for name in file_node.names:
@@ -106,6 +189,7 @@ def ptr_store(file_node,times):
 #----------------------------------------------------------
 
 def ArrayDecl_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag=False
     x, y = pattern_node.type, file_node.type
     type_x, type_y = type(x).__name__, type(y).__name__
@@ -123,6 +207,7 @@ def ArrayDecl_nodeCheck(pattern_node, file_node):
     return flag
 
 def ArrayRef_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     ## a name id guaranteed to have
     type_y = type(file_node.name).__name__
@@ -136,6 +221,7 @@ def ArrayRef_nodeCheck(pattern_node, file_node):
     return flag
 
 def Assignment_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     x, y = pattern_node, file_node
     ## some thoughts to be given here
@@ -159,7 +245,6 @@ def Assignment_nodeCheck(pattern_node, file_node):
             flag = False
         else:
             flag = paramID_func(x,y)
-
     return flag
 
 # for binaryOp ::
@@ -167,6 +252,7 @@ def Assignment_nodeCheck(pattern_node, file_node):
 # the left and right if set to parameter are then set automatically
 # else we dig further
 def BinaryOp_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     if pattern_node.op == file_node.op:
 
@@ -189,14 +275,17 @@ def BinaryOp_nodeCheck(pattern_node, file_node):
     return flag
 
 def Break_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     #not a threat
     return True
 
 def Case_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     #to be decided
     return True
 
 def Cast_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = True
     x=pattern_node.to_type
     y=file_node.to_type
@@ -216,6 +305,7 @@ def Cast_nodeCheck(pattern_node, file_node):
     return flag
 
 def Compound_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## what to do with compound element
     ## decide in a discussion
     flag = False
@@ -233,18 +323,22 @@ def Compound_nodeCheck(pattern_node, file_node):
     return flag
 
 def CompoundLiteral_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def Constant_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## the type of the constant is also important
     ParamStore.append([file_node.type, file_node.value])
     return True
 
 def Continue_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     #not a threat
     return True
 
 def Decl_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = True
     # name attribute
     flag = paramID_func(pattern_node, file_node.name)
@@ -279,6 +373,7 @@ def Decl_nodeCheck(pattern_node, file_node):
     return flag
 
 def DeclList_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag=False
     try:
         x, y = pattern_node.decls, file_node.decls
@@ -297,6 +392,7 @@ def DeclList_nodeCheck(pattern_node, file_node):
     return flag
 
 def Default_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def DoWhile_nodeCheck(pattern_node, file_node):
@@ -304,30 +400,36 @@ def DoWhile_nodeCheck(pattern_node, file_node):
     return While_nodeCheck(pattern_node,file_node)
 
 def EllipsisParam_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def EmptyStatement_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def Enum_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## precoded so it wont alter the execution of program
     return True
 
 def Enumerator_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## name: value pairs for enum
     ## precoded so it wont alter the execution of program
     return True
 
 def EnumeratorList_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## list for enum
     return True
 
 def ExprList_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = True
     try:
         if len(pattern_node.exprs)> len(file_node.exprs):
             return False
-        tmp = zip(x,y)
+        tmp = zip(pattern_node.exprs,file_node.exprs)
         for x, y in tmp:
             if type(x).__name__ == type(y).__name__ and flag:
                 what_type = type(y).__name__
@@ -339,6 +441,7 @@ def ExprList_nodeCheck(pattern_node, file_node):
     return True
 
 def For_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## the implementation :: when the parameters are when defined
     ## the evaluation is strict checking for each construct
     flag = False
@@ -382,26 +485,31 @@ def For_nodeCheck(pattern_node, file_node):
     return flag
 
 def FuncCall_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = ID_nodeCheck(pattern_node.name, file_node.name) and ExprList_nodeCheck(pattern_node.args, file_node.args)
     return flag or paramID_func(pattern_node, file_node)
 
 def FuncDecl_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def Goto_nodeCheck(pattern_node, file_node):
     return True
 
 def ID_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     if pattern_node.name == file_node.name:
         return True
     else:
         return paramID_func(pattern_node,file_node)
 
 def IdentifierType_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     identifier_store_func(pattern_node, file_node)
     return True
 
 def If_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     ##init attribute : in most cases we would like to store it
     try:
@@ -433,19 +541,24 @@ def If_nodeCheck(pattern_node, file_node):
     return flag
 
 def InitList_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def Label_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def NameInitializer_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def ParamList_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 times=0
 def PtrDecl_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## again no code for quals
     global times
     times+=1
@@ -463,21 +576,27 @@ def PtrDecl_nodeCheck(pattern_node, file_node):
     return flag
 
 def Return_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def Struct_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def StructRef_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def Switch_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def TernaryOp_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def TypeDecl_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     # other parameters I currently not aware of so not implementing
     x,y = pattern_node.type,file_node.type
@@ -487,10 +606,12 @@ def TypeDecl_nodeCheck(pattern_node, file_node):
     return flag
 
 def Typedef_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## not a threat
     return True
 
 def Typename_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     # other parameters I currently not aware of so not implementing
     x,y = pattern_node.type,file_node.type
@@ -500,6 +621,7 @@ def Typename_nodeCheck(pattern_node, file_node):
     return flag
 
 def UnaryOp_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     try:
         if pattern_node.op == file_node.op:
@@ -514,9 +636,11 @@ def UnaryOp_nodeCheck(pattern_node, file_node):
     return flag
 
 def Union_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     return True
 
 def While_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     flag = False
     try:
         ## the cond must be either equal or x must have param set to its name
@@ -540,12 +664,14 @@ def While_nodeCheck(pattern_node, file_node):
     return flag
 
 def Pragma_nodeCheck(pattern_node, file_node):
+    updateCoord(file_node)
     ## not a threat
     return True
 
 #####################################################################################################
 ## class iterators which find the required class range in initialPattern file
 def pattern_iterator(node):
+    global line1, col1, line2, col2
     what_type, start_line, end_line = getLineRange(node)
     f=open(file_initialPattern,'r')
     f.seek(start_line)
@@ -568,7 +694,6 @@ def pattern_iterator(node):
                     offset+=len(line)
                 pattern_string+='}'
                 #for debugging uncomment the following two lines
-                #print(node.coord)
                 #print(pattern_string)
                 pattern_ast = build_pattern_AST(pattern_string)
                 #travel down to the compound element
@@ -579,7 +704,7 @@ def pattern_iterator(node):
                     print('param: ',ParamStore)
                     print('iden: ',IdentifierStore)
                     print('assign: ',OpStore)
-                    #print(node.coord.line, node.coord.column)
+                    print(line1,col1,line2,col2)
                     """
                     fd = open(file_dataStore,'a')
                     fd.write(str(ParamStore)+'\n')
@@ -588,6 +713,7 @@ def pattern_iterator(node):
             ParamStore[:]=[]
             IdentifierStore[:]=[]
             OpStore[:]=[]
+            line1,col1,line2,col2=INF,INF,ZERO,ZERO
         except:
             pass
 
@@ -628,10 +754,11 @@ def loadfileOptimised():
     #file.seek(line_offset[n])
 
 if __name__ == "__main__":
+    #global c_file
     if len(sys.argv) > 1:
-        filename = sys.argv[1]
+        c_file = sys.argv[1]
     else:
-        filename = 'sample.c'
+        c_file = 'sample.c'
 
     loadfileOptimised()
-    check(filename)
+    check(c_file)
