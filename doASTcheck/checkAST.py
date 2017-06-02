@@ -20,6 +20,7 @@ from pycparser import c_parser, c_ast, parse_file, c_generator
 ##definitions
 INF = float("inf")
 ZERO = 0
+line1, col1, line2, col2 = INF, INF, ZERO, ZERO
 
 ##globals
 #dictionary mapping class types to line range in initialPattern file
@@ -48,6 +49,18 @@ def build_pattern_AST(pattern_string):
 #----------------------------------------------------------
 ## helper functions
 
+def write_to_file(rl1,rl2):
+    fd = open(file_dataStore,'a')
+    fd.write(str(ParamStore)+"\n")
+    fd.write(str(IdentifierStore)+"\n")
+    fd.write(rl1+","+rl2+"\n")
+    fd.write(str(line1)+","+str(col1)+","+str(line2)+","+str(col2))
+    fd.close()
+
+def deleteContent():
+    with open(file_dataStore, "w"):
+        pass
+
 def generatorC(file_node):
     generator = c_generator.CGenerator()
     try:
@@ -55,7 +68,6 @@ def generatorC(file_node):
     except:
         return file_node
 
-line1, col1, line2, col2 = INF, INF, ZERO, ZERO
 def updateCoord(node):
     global line1, col1, line2, col2
     try:
@@ -141,12 +153,6 @@ def paramID_func(x, y):
 def param_store_func(pattern_node, file_node):
     n = int(pattern_node.name[5:].strip())
     if len(ParamStore) == n:
-        #store the function as a parameter
-        #generator = c_generator.CGenerator()
-        #try:
-        #    ParamStore.append(generator.visit(file_node))
-        #except:
-        #    ParamStore.append(file_node)
         ParamStore.append(generatorC(file_node))
 
 def identifier_store_func(pattern_node, file_node):
@@ -203,7 +209,6 @@ def ArrayDecl_nodeCheck(pattern_node, file_node):
     type_y = type(y).__name__
     ## dimensions are to be stored always
     dimArray_func(y, 'decl')
-    #print(file_node.dim_quals)
     return flag
 
 def ArrayRef_nodeCheck(pattern_node, file_node):
@@ -684,6 +689,7 @@ def pattern_iterator(node):
         try:
             #extract the pattern
             if 'start:' in line.strip():
+                rl1,rl2 = line.strip().split(':')[1:]
                 pattern_string='int f(){\n'
                 while True:
                     line = f.readline()
@@ -701,15 +707,14 @@ def pattern_iterator(node):
                 flag = eval(what_type+"_nodeCheck(pattern_ast[0][1], node)")
                 if flag:
                     changeMade = True
+                    #debugging print statements
+                    """
                     print('param: ',ParamStore)
                     print('iden: ',IdentifierStore)
                     print('assign: ',OpStore)
                     print(line1,col1,line2,col2)
                     """
-                    fd = open(file_dataStore,'a')
-                    fd.write(str(ParamStore)+'\n')
-                    fd.close()
-                    """
+                    write_to_file(rl1,rl2)
             ParamStore[:]=[]
             IdentifierStore[:]=[]
             OpStore[:]=[]
@@ -725,7 +730,7 @@ def dfs_node_iterate(node):
     for xname, x in node.children():
         what_type = type(x).__name__
         changeMade = False
-        print(what_type)
+        #print(what_type)
         if what_type in classMap:
             #invoke the respective type check function
             changeMade = pattern_iterator(x)
@@ -761,4 +766,5 @@ if __name__ == "__main__":
         c_file = 'sample.c'
 
     loadfileOptimised()
+    deleteContent()
     check(c_file)
