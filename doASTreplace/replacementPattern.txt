@@ -1,0 +1,1 @@
+fscanf(param0,param1);
