@@ -1,9 +1,9 @@
 {
-    "name": "checkthisfile",
-    "displayName": "checkThisFile",
-    "description": "Checks for the harmful code snippets",
+    "name": "final",
+    "displayName": "",
+    "description": "",
     "version": "0.0.1",
-    "publisher": "Manish",
+    "publisher": "qwer",
     "engines": {
         "vscode": "^1.12.0"
     },
@@ -11,22 +11,29 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.checkMe"
+        "*"
     ],
     "main": "./out/src/extension",
     "contributes": {
         "commands": [{
-            "command": "extension.checkMe",
-            "title": "checkMe",
-            "category": "Markdown",
-            "icon": "./media/inf.svg"
+            "command": "extension.check",
+            "title": "Check",
+            "icon": "media/index.jpeg"
+            
+        },{
+            "command": "extension.replace",
+            "title": "Replace",
+            "icon": "media/index.png"
         }],
         "menus": {
             "editor/title": [{
-                "command": "extension.checkMe",
-                "title":"checkMe",
-                "group":"navigation"
-            }]
+                "command": "extension.replace",
+                "group": "navigation"
+            },{
+                "command": "extension.check",
+                "group": "navigation"
+            }
+            ]
         }
     },
     "scripts": {

@@ -4,9 +4,9 @@ from itertools import islice
 
 dicto = {}
 ## file to be read or written
-function = 'replacementPattern.txt'
-out_file = 'output.txt'
-dfile = '../doASTcheck/data.txt'
+function = 'req/doASTreplace/replacementPattern.txt'
+out_file = 'req/doASTreplace/output.txt'
+dfile = 'req/doASTcheck/data.txt'
 cou = 0
 
 
@@ -72,6 +72,11 @@ def printChange(node, lno):		# prints the final output in a list
 	generator = c_generator.CGenerator()
 	stri = generator.visit(node)
 	stri = stri[13:-3].strip()
+	stri = list(stri)
+	cnt = stri.count(' ')
+	for k in range(cnt):
+		stri.remove(' ')
+	stri = ''.join(stri)
 	return stri
 
 
@@ -106,6 +111,8 @@ def getFunc(lno):			#generates ast for the replacement function
 	for l in lst:
 		stri = stri + l
 	stri = 'func(){' + stri + '}'
+	#print stri
+	#assert False
         parser = c_parser.CParser()
 	ast = parser.parse(stri)
 	return ast
@@ -127,8 +134,11 @@ def extract(lines):			#extract the information from the set of four lines
 	replacVar(ast, par)
 	if ide!=[]:
 		pointerAssign(bst, ide, ast)
+	#assert False
 	out = printChange(ast, lno)
-	stri = str(coo) + '\n' + str(out) + '\n'
+	#print out
+	#assert False
+	stri = str(out) + '\n' + str(coo) + '\n'
 	temp = open(out_file,'a')
 	temp.write(stri)
 	temp.close()
