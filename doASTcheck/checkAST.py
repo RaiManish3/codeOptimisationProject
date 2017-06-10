@@ -16,6 +16,7 @@ import re
 sys.path.extend(['.', '..'])
 
 from pycparser import c_parser, c_ast, parse_file, c_generator
+import getRange
 
 ##definitions
 INF = float("inf")
@@ -26,8 +27,8 @@ line1, col1, line2, col2 = INF, INF, ZERO, ZERO
 #dictionary mapping class types to line range in initialPattern file
 classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21),'If':(23,25)}
 c_file = ''
-file_initialPattern = "initialPattern.txt"
-file_dataStore = "data.txt"
+file_initialPattern = "../doASTcheck/initialPattern.txt"
+file_dataStore = "../doASTcheck/data.txt"
 line_offset = []
 
 #information store
@@ -675,7 +676,7 @@ def Pragma_nodeCheck(pattern_node, file_node):
 
 #####################################################################################################
 ## class iterators which find the required class range in initialPattern file
-def pattern_iterator(node):
+def pattern_iterator(node, filename):
     global line1, col1, line2, col2
     what_type, start_line, end_line = getLineRange(node)
     f=open(file_initialPattern,'r')
@@ -714,6 +715,7 @@ def pattern_iterator(node):
                     print('assign: ',OpStore)
                     print(line1,col1,line2,col2)
                     """
+                    line2, col2 = getRange.getCol(filename, line1, col1, line2, col2)
                     write_to_file(rl1,rl2)
             ParamStore[:]=[]
             IdentifierStore[:]=[]
@@ -726,22 +728,22 @@ def pattern_iterator(node):
     f.close()
 
 #####################################################################################################
-def dfs_node_iterate(node):
+def dfs_node_iterate(node, filename):
     for xname, x in node.children():
         what_type = type(x).__name__
         changeMade = False
         #print(what_type)
         if what_type in classMap:
             #invoke the respective type check function
-            changeMade = pattern_iterator(x)
+            changeMade = pattern_iterator(x, filename)
         #Do not iterate again on parts whose children had the changes
         if not changeMade:
-            dfs_node_iterate(x)
+            dfs_node_iterate(x, filename)
 
 #generate the AST for the C program and does a DFS on it
 def check(filename):
     ast = parse_file(filename, use_cpp=True)
-    dfs_node_iterate(ast)                               # implement dfs here
+    dfs_node_iterate(ast, filename)                               # implement dfs here
 
 
 #####################################################################################################
@@ -763,8 +765,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         c_file = sys.argv[1]
     else:
-        c_file = 'sample.c'
-
+        c_file = '../sample_c_programs/sample.c'
+	
     loadfileOptimised()
     deleteContent()
     check(c_file)

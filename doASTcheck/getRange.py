@@ -2,12 +2,11 @@
 # char that need to have a count -> ", { , (
 import linecache
 
-file_in = "../sample_c_programs/sample.c"
-fout = 'trial.txt'
-lst=[]
+#file_in = "../sample_c_programs/sample.c"
+#fout = 'trial.txt'
 
-def getCol(line1, col1, line2, col2):
-    #with open(file_in, 'r') as fs:
+def getCol(file_in, line1, col1, line2, col2):
+    lst=[]
     quoteC, hasBrace, gotIt = 1, False, False
     nquote, nbrace, nparen = 0, 0, 0
     while True:
@@ -41,6 +40,4 @@ def getCol(line1, col1, line2, col2):
             break
         line1+=1
 
-
-getCol(2,5,2,48)
-print lst
+    return lst[0]
