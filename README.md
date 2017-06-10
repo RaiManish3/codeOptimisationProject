@@ -14,8 +14,9 @@ To avoid that we replace those snippets of code with their better halfs.<br>
 
 ## Installation
 - clone the repo
-- put the whole folder based on your OS
+- put the whole folder as decribed below:
 -- Linux / Mac : $HOME/.vscode/extensions
 -- Windows : %USERPROFILE%\.vscode\extensions
 
-*****Currently in Process*****
+__Currently we are facing some issues regarding installation__
+
