@@ -10,7 +10,12 @@ To avoid that we replace those snippets of code with their better halfs.<br>
 - pycparser from [https://github.com/eliben/pycparser][1].
 - python shell from [https://github.com/extrabacon/python-shell][2]
 - node.js.
+- vscode *OFCOURCE*
 
 ## Installation
+- clone the repo
+- put the whole folder based on your OS
+-- Linux / Mac : $HOME/.vscode/extensions
+-- Windows : %USERPROFILE%\.vscode\extensions
 
-Currently in Process
+*****Currently in Process*****
