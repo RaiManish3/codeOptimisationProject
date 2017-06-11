@@ -1,9 +1,9 @@
 {
-    "name": "final",
-    "displayName": "",
+    "name": "codeOptimisationProject",
+    "displayName": "codeOptimiser",
     "description": "",
     "version": "0.0.1",
-    "publisher": "qwer",
+    "publisher": "Manish Rai and Sonam Tenzin",
     "engines": {
         "vscode": "^1.12.0"
     },
@@ -19,7 +19,6 @@
             "command": "extension.check",
             "title": "Check",
             "icon": "media/index.jpeg"
-            
         },{
             "command": "extension.replace",
             "title": "Replace",

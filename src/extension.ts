@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "final" is now active!');
+    console.log('Congratulations, your extension "codeOptimiser" is now active!');
     let editor = vscode.window.activeTextEditor
     let PythonShell = require ('python-shell')
     let ASTcheck = 'req/doASTcheck/checkAST.py'
@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
         args: fn
     }
 
-    vscode.window.showInformationMessage('Please Wait');
+    vscode.window.showInformationMessage('Please Wait. Also make sure you save the file so that the changes can appear.');
     PythonShell.run(ASTcheck, optionC, function(err){
         if (err) throw err
         PythonShell.run(ASTreplace, function(drr){
@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
     
 
     let decorationType = vscode.window.createTextEditorDecorationType({
-            backgroundColor: 'red'
+            backgroundColor: 'rgba(200,30,30,0.4)'
         })    
     let disposable = vscode.commands.registerCommand('extension.check', () => {
        //vscode.window.showInformationMessage('Please Wait');
@@ -44,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (drr) throw err
             decorationType.dispose() 
         decorationType = vscode.window.createTextEditorDecorationType({
-            backgroundColor: 'red'
+            backgroundColor: 'rgba(200,30,30,0.4)'
         })
         PythonShell.run(runge, function(err){
             if (err) throw err
@@ -57,7 +57,6 @@ export function activate(context: vscode.ExtensionContext) {
             let line_split = line.split(',')
             let pos1 = new vscode.Range(parseInt(line_split[0])-1,parseInt(line_split[1])-1,parseInt(line_split[2])-1,parseInt(line_split[3])-1)
             decs.push(pos1)
-            console.log(decorationType)
             editor.setDecorations(decorationType, decs)
             
             i += 1
@@ -108,7 +107,6 @@ export function activate(context: vscode.ExtensionContext) {
                 k++
             }
             let dan = arr.pop()
-            //console.log(data)
             let ran = dan.split(',')
             arr.push('')
             k = 0

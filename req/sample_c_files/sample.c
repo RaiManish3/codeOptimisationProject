@@ -2,10 +2,14 @@ int main(){
     char*** a = (char***)malloc(sizeof(char**)*n);
     char*** a = (char***)malloc(sizeof(char**)*n);
     char*** a = (char***)malloc(sizeof(char**)*n);
-    b = (int**)malloc(sizeof(int*)*n);
+    hjide(b);
+    b=ifhfj(a);
+    charfhfj(a);
+    char***a=(char***)calloc((sizeof(char**))*n);
     char*** a = (char***)malloc(sizeof(char**)*n);
     char*** a = (char***)malloc(sizeof(char**)*n);
-    char*** a = (char***)malloc(sizeof(char**)*n);
+    fhfj(a);
+    char***a=(char***)calloc((sizeof(char**))*n);
     /*
     const static char a[n][3];
     strcpy(x,y); 
@@ -21,6 +25,5 @@ int main(){
     //}
     //if(a<b){
     //  a=1;}
-    scanf(m,n);
-    
+    scanf(m,n);    
 }
