@@ -8,41 +8,46 @@ const vscode = require("vscode");
 function activate(context) {
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "codeOptimiser" is now active!');
-    let editor = vscode.window.activeTextEditor;
+    //console.log('Congratulations, your extension "codeOptimiser" is now active!');
+    var sh = require("shelljs");
+    var cwd = sh.pwd().toString();
     let PythonShell = require('python-shell');
-    let ASTcheck = 'req/doASTcheck/checkAST.py';
-    let ASTreplace = 'req/doASTreplace/replaceAST.py';
-    let prnt = 'req/printString/in.py';
-    let runge = 'req/printString/updateLines.py';
-    let vunge = 'req/printString/updateOut.txt';
-    let out = 'req/doASTreplace/output.txt';
-    let fn = editor.document.fileName;
-    let optionC = {
-        args: fn
-    };
-    vscode.window.showInformationMessage('Please Wait. Also make sure you save the file so that the changes can appear.');
-    PythonShell.run(ASTcheck, optionC, function (err) {
-        if (err)
-            throw err;
-        PythonShell.run(ASTreplace, function (drr) {
-            if (drr)
-                throw err;
-            vscode.window.showInformationMessage('Start');
-        });
-    });
-    let decorationType = vscode.window.createTextEditorDecorationType({
+    let path = require('path');
+    let initials = process.env['HOME'];
+    let ASTcheck = initials+'/.vscode/extensions/codeOptimisationProject/req/doASTcheck/checkAST.py';
+    let ASTreplace = initials+'/.vscode/extensions/codeOptimisationProject/req/doASTreplace/replaceAST.py';
+    let prnt = initials+'/.vscode/extensions/codeOptimisationProject/req/printString/in.py';
+    let runge = initials+'/.vscode/extensions/codeOptimisationProject/req/printString/updateLines.py';
+    let vunge = initials+'/.vscode/extensions/codeOptimisationProject/req/printString/updateOut.txt';
+    let out = initials+'/.vscode/extensions/codeOptimisationProject/req/doASTreplace/output.txt';
+
+    ASTcheck = path.relative(cwd, ASTcheck);
+    ASTreplace = path.relative(cwd, ASTreplace);
+    prnt = path.relative(cwd, prnt);
+    runge = path.relative(cwd, runge);
+    vunge = path.relative(cwd, vunge);
+    out = path.relative(cwd, out)
+ 
+    var decorationType = vscode.window.createTextEditorDecorationType({
         backgroundColor: 'rgba(200,30,30,0.4)'
     });
-    let disposable = vscode.commands.registerCommand('extension.check', () => {
-        //vscode.window.showInformationMessage('Please Wait');
+
+    var disposable = vscode.commands.registerCommand('extension.check', () => {
+        let editor = vscode.window.activeTextEditor;
+        let fn = editor.document.fileName;
+        let optionC = {
+            args: [fn]
+        };
+        vscode.window.showInformationMessage('Please wait. Make sure your files are saved.');
+    
         PythonShell.run(ASTcheck, optionC, function (err) {
             if (err)
-                throw err;
-            PythonShell.run(ASTreplace, function (drr) {
-                if (drr)
-                    throw err;
-                decorationType.dispose();
+                vscode.window.showInformationMessage(err);
+
+            decorationType.dispose();
+            PythonShell.run(ASTreplace, function (err) {
+                if (err)
+                    vscode.window.showInformationMessage(err);
                 decorationType = vscode.window.createTextEditorDecorationType({
                     backgroundColor: 'rgba(200,30,30,0.4)'
                 });
@@ -62,28 +67,14 @@ function activate(context) {
                         i += 1;
                     });
                 });
-                //vscode.window.showInformationMessage('Start');
             });
+        
         });
-        /*
-            let lineReader = require('readline').createInterface({
-                input: require('fs').createReadStream(vunge)
-            })
-            let i = 1
-            let decs = []
-            lineReader.on('line', function(line){
-                console.log('hello')
-                let line_split = line.split(',')
-                let pos1 = new vscode.Range(parseInt(line_split[0]),parseInt(line_split[1]),parseInt(line_split[2]),parseInt(line_split[3]))
-                decs.push(pos1)
-                editor.setDecorations(decorationType, decs)
-                
-                i += 1
-            })
-            */
-        //vscode.window.showInformationMessage('Hello World!');
     });
+
+
     vscode.commands.registerCommand('extension.replace', () => {
+        let editor = vscode.window.activeTextEditor;
         let position = editor.selection.active;
         let correctPos = new vscode.Position(position.line + 1, position.character + 1);
         let optionP = {
@@ -121,6 +112,7 @@ function activate(context) {
     });
     context.subscriptions.push(disposable);
 }
+
 exports.activate = activate;
 // this method is called when your extension is deactivated
 function deactivate() {

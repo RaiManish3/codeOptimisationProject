@@ -7,9 +7,12 @@
 # Manish Rai
 #-----------------------------------------------------------------
 from __future__ import print_function
+import os
 import sys
 import itertools
 import re
+from os.path import expanduser
+home = expanduser("~")
 
 # This is not required if you've installed pycparser into
 # your site-packages/ with setup.py
@@ -27,8 +30,8 @@ line1, col1, line2, col2 = INF, INF, ZERO, ZERO
 #dictionary mapping class types to line range in initialPattern file
 classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21),'If':(23,25)}
 c_file = ''
-file_initialPattern = "req/doASTcheck/initialPattern.txt"
-file_dataStore = "req/doASTcheck/data.txt"
+file_initialPattern = home+"/.vscode/extensions/codeOptimisationProject/req/doASTcheck/initialPattern.txt"
+file_dataStore = home+"/.vscode/extensions/codeOptimisationProject/req/doASTcheck/data.txt"
 line_offset = []
 
 #information store
@@ -761,11 +764,11 @@ def loadfileOptimised():
     #file.seek(line_offset[n])
 
 if __name__ == "__main__":
-    #global c_file
+
     if len(sys.argv) > 1:
         c_file = sys.argv[1]
     else:
-        c_file = '../sample_c_files/sample.c'
+        c_file = home+'.vscode/extensions/codeOptimisationProject/req/sample_c_files/sample.c'
 
     loadfileOptimised()
     deleteContent()

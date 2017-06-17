@@ -1,9 +1,8 @@
 import sys, re, linecache
+from os.path import expanduser
+home = expanduser("~")
 
-output = 'req/doASTreplace/output.txt'
-
-
-
+output = home+'/.vscode/extensions/codeOptimisationProject/req/doASTreplace/output.txt'
 
 def colchange(clk):		# no. of lines same as before
 	line = (lst[clk].split('\n')[0]).split(',')
@@ -46,7 +45,7 @@ def colchange(clk):		# no. of lines same as before
 	for i in range(prev+1, val+1):
 		del lst[prev+1]
 	stri = ''.join(lst)
-	fd = open('samplenew.txt','w')
+	fd = open(home+'/.vscode/extensions/codeOptimisationProject/samplenew.txt','w')
 	fd.write(stri)
 	fd.close()
 	

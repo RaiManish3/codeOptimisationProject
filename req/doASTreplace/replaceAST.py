@@ -1,12 +1,14 @@
 from pycparser import c_parser, c_ast, parse_file, c_generator
 import linecache
 from itertools import islice
+from os.path import expanduser
+home = expanduser("~")
 
 dicto = {}
 ## file to be read or written
-function = 'req/doASTreplace/replacementPattern.txt'
-out_file = 'req/doASTreplace/output.txt'
-dfile = 'req/doASTcheck/data.txt'
+function = home+'/.vscode/extensions/codeOptimisationProject/req/doASTreplace/replacementPattern.txt'
+out_file = home+'/.vscode/extensions/codeOptimisationProject/req/doASTreplace/output.txt'
+dfile = home+'/.vscode/extensions/codeOptimisationProject/req/doASTcheck/data.txt'
 cou = 0
 
 
