@@ -9,8 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "codeOptimiser" is now active!');
-    let editor = vscode.window.activeTextEditor
+    //console.log('Congratulations, your extension "codeOptimiser" is now active!');
     let PythonShell = require ('python-shell')
     let ASTcheck = 'req/doASTcheck/checkAST.py'
     let ASTreplace = 'req/doASTreplace/replaceAST.py'
@@ -18,11 +17,8 @@ export function activate(context: vscode.ExtensionContext) {
     let runge = 'req/printString/updateLines.py'
     let vunge = 'req/printString/updateOut.txt'
     let out = 'req/doASTreplace/output.txt'
-    let fn = editor.document.fileName
-    let optionC = {
-        args: fn
-    }
 
+    /*
     vscode.window.showInformationMessage('Please Wait. Also make sure you save the file so that the changes can appear.');
     PythonShell.run(ASTcheck, optionC, function(err){
         if (err) throw err
@@ -31,13 +27,18 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage('Start');
         })
     })
-    
+    */
 
     let decorationType = vscode.window.createTextEditorDecorationType({
             backgroundColor: 'rgba(200,30,30,0.4)'
         })    
     let disposable = vscode.commands.registerCommand('extension.check', () => {
        //vscode.window.showInformationMessage('Please Wait');
+        let editor = vscode.window.activeTextEditor
+        let fn = editor.document.fileName
+        let optionC = {
+            args: fn
+        }
     PythonShell.run(ASTcheck, optionC, function(err){
         if (err) throw err
         PythonShell.run(ASTreplace, function(drr){
