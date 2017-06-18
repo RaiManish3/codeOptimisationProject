@@ -9,14 +9,14 @@ To avoid that we replace those snippets of code with their better halfs.<br>
 ## Requirements
 - [pycparser](https://github.com/eliben/pycparser)
 - [python shell](https://github.com/extrabacon/python-shell)
+- shelljs
 - node.js.
 - vscode *(OFCOURSE)*
 
 ## Installation
-- clone the repo
-- put the whole folder to the following path:
-    - Linux / Mac : _$HOME/.vscode/extensions_
-    - Windows : _%USERPROFILE%\.vscode\extensions_
-
-__Currently we are facing some issues regarding installation__
+- Clone the Repo
+- Put the whole folder to the following path:
+    -- Linux / Mac : _$HOME/.vscode/extensions_
+    -- Windows : _%USERPROFILE%\.vscode\extensions_
+- You're done. The extension has been setup.
 
