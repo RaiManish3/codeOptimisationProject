@@ -16,7 +16,7 @@ To avoid that we replace those snippets of code with their better halfs.<br>
 ## Installation
 - Clone the Repo
 - Put the whole folder to the following path:
-    -- Linux / Mac : _$HOME/.vscode/extensions_
-    -- Windows : _%USERPROFILE%\.vscode\extensions_
+    - Linux / Mac : _$HOME/.vscode/extensions_
+    - Windows : _%USERPROFILE%\.vscode\extensions_
 - You're done. The extension has been setup.
 
