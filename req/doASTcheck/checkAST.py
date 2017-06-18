@@ -32,6 +32,7 @@ classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21),'If':(23,25)
 c_file = ''
 file_initialPattern = home+"/.vscode/extensions/codeOptimisationProject/req/doASTcheck/initialPattern.txt"
 file_dataStore = home+"/.vscode/extensions/codeOptimisationProject/req/doASTcheck/data.txt"
+fake_headers = home+"/.vscode/extensions/codeOptimisationProject/req/doASTcheck/utils/fake_libc_include"
 line_offset = []
 
 #information store
@@ -745,7 +746,7 @@ def dfs_node_iterate(node, filename):
 
 #generate the AST for the C program and does a DFS on it
 def check(filename):
-    ast = parse_file(filename, use_cpp=True)
+    ast = parse_file(filename, use_cpp=True,cpp_path='cpp',cpp_args=r'-I'+fake_headers)
     dfs_node_iterate(ast,filename)                               # implement dfs here
 
 
