@@ -28,7 +28,7 @@ line1, col1, line2, col2 = INF, INF, ZERO, ZERO
 
 ##globals
 #dictionary mapping class types to line range in initialPattern file
-classMap = {'Assignment':(2,10), 'Decl':(12,17),'FuncCall':(19, 21),'If':(23,25)}
+classMap = {'Assignment':(2,4), 'Decl':(6,8),'FuncCall':(10, 15)}
 c_file = ''
 file_initialPattern = home+"/.vscode/extensions/codeOptimisationProject/req/doASTcheck/initialPattern.txt"
 file_dataStore = home+"/.vscode/extensions/codeOptimisationProject/req/doASTcheck/data.txt"
@@ -719,6 +719,7 @@ def pattern_iterator(node,filename):
                     print('assign: ',OpStore)
                     print(line1,col1,line2,col2)
                     """
+                    
 		    line2, col2 = getRange.getCol(filename, line1,col1, line2, col2)
                     write_to_file(rl1,rl2)
             ParamStore[:]=[]

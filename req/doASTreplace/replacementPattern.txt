@@ -1,6 +1,4 @@
-fscanf(param0,param1);
-sdaads(param0);
-hjide(param0);
 param0 = (int*)calloc(sizeof(int)*param1);
-fhfj(param0);
 int* param0 = (int*)calloc(sizeof(int)*param1);
+fscanf(param0,param1);
+strncpy(param0, param1, user_input);

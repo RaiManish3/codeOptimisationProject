@@ -1,28 +1,16 @@
 ##Assigment
-start:3:4
+start:1:1
 param0 = (int*)malloc(sizeof(int)*param1);
 end:
-start:2:2
-param0[param1] = param2;
-end:
-start:3:3
-param0 = param1[param2];
-end:
 ##Decl and ##ArrayDecl
-start:5:6
+start:2:2
 int* param0 = (int*)malloc(sizeof(int)*param1);
 end:
-start:5:5
-int param0[param1];
-end:
 ##FuncCall
-start:6:6 
+start:4:4 
 strcpy(param0, param1);
 end:
-start:1:2
+start:3:3
 scanf(param0, param1);
 end:
 ##If
-start:7:7
-if(param0<param1)param2;
-end:
